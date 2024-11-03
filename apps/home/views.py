@@ -12,7 +12,8 @@ from django.urls import reverse
 from django.shortcuts import render
 import pandas as pd
 from .models import UploadedFile
-import os
+from .module.process_data import ProcessData
+
 
 @login_required(login_url="/login/")
 def index(request):
@@ -60,32 +61,49 @@ def upload_file(request):
             }, status=400)
 
         try:
-            # Lưu file vào database
-            uploaded_file = UploadedFile.objects.create(file=file)
-            # Xử lý file
-            # if file.name.endswith('.csv'):
-            #     df = pd.read_csv(file)
-            # elif file.name.endswith(('.xls', '.xlsx')):
-            #     df = pd.read_excel(file)
-            if file.name.endswith(('.csv','.xls', '.xlsx')):
-                df = pd.read_csv(file)
-            else:
+            # Kiểm tra định dạng và kích thước file
+            if file.size > 10 * 1024 * 1024:  # Giới hạn 10MB chẳng hạn
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'File size too large.'
+                }, status=400)
+
+            if not file.name.endswith(('.csv', '.xlsx', '.xls')):
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Unsupported file format. Please upload a .csv or .xlsx file.'
                 }, status=400)
 
-            # Đánh dấu file đã được xử lý
-            uploaded_file.processed = True
+            # Lưu file vào database
+            uploaded_file = UploadedFile.objects.create(file=file)
+
+            # Đọc file với pandas, thêm `header=None` nếu không có tiêu đề cột
+            if file.name.endswith('.csv'):
+                file.seek(0)  
+                df = pd.read_csv(file, header=0)  # Thay đổi header=0 hoặc header=None tùy theo dữ liệu của bạn
+            else:
+                df = pd.read_excel(file)
+
+            # Nếu file trống, trả về lỗi
+            if df.empty:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Uploaded file is empty.'
+                }, status=400)
+
+            # Lưu metadata
+            metadata = {
+                'columns': list(df.columns),
+                'num_rows': len(df),
+                'file_name': file.name
+            }
+            uploaded_file.metadata = metadata
             uploaded_file.save()
 
-            # Tạo bản tóm tắt dữ liệu
-            data_summary = df.describe().to_html(classes='table table-striped')
+            # Gọi hàm process_data để xử lý dữ liệu
+            response = process_data(request, uploaded_file.id)
             
-            return JsonResponse({
-                'status': 'success',
-                'data_summary': data_summary
-            })
+            return response
 
         except Exception as e:
             return JsonResponse({
@@ -97,3 +115,67 @@ def upload_file(request):
         'status': 'error',
         'message': 'Invalid request method'
     }, status=400)
+
+
+@login_required(login_url="/login/")
+def process_data(request, file_id):
+    try:
+        uploaded_file = UploadedFile.objects.get(id=file_id)
+        if not uploaded_file.processed:
+            # Load file từ database
+            file_path = uploaded_file.file.path
+            # Tạo instance của ProcessData với dữ liệu đã load
+            processor = ProcessData.load_data(file_path)
+            # Xử lý dữ liệu bằng phương thức process_data_df
+            df = processor.process_data_df(uploaded_file.metadata)
+            # Tạo bản tóm tắt dữ liệu sau khi xử lý
+            data_summary = processor.get_summary()
+            # Update trạng thái xử lý
+            uploaded_file.processed = True
+            uploaded_file.validated = True
+            uploaded_file.save()
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data processed successfully.',
+                'data_summary': data_summary
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'File already processed.'
+            })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+@login_required(login_url="/login/")
+def visualize_data(request, file_id):
+    try:
+        uploaded_file = UploadedFile.objects.get(id=file_id)
+        
+        if not uploaded_file.validated:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Data not validated for visualization.'
+            })
+
+        # Giả lập visualize dữ liệu, sử dụng Pandas hoặc Matplotlib để tạo hình ảnh hoặc biểu đồ
+        df = pd.read_csv(uploaded_file.file.path)  # Hoặc load từ file đã xử lý
+        plot_path = f'temporary/plot_{uploaded_file.file.name}.png'
+        
+        # Ví dụ tạo biểu đồ đơn giản
+        df['some_column'].plot(kind='bar')  # Giả định có cột 'some_column'
+        plt.savefig(plot_path)
+
+        return JsonResponse({
+            'status': 'success',
+            'plot_path': plot_path
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)

@@ -82,11 +82,12 @@ $(document).ready(function() {
 
         formData.append('file', file);
 
+        // Cập nhật trạng thái upload và xử lý dữ liệu
         uploadStatus.removeClass().addClass('alert alert-info')
-            .text('Processing...').show();
+            .text('Uploading and Processing...').show();
         
         $.ajax({
-            url: '/uploads/',
+            url: '/uploads/',  // Đảm bảo URL này trỏ đúng đến hàm `upload_file`
             type: 'POST',
             data: formData,
             processData: false,
@@ -95,9 +96,13 @@ $(document).ready(function() {
                 'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val()
             },
             success: function(response) {
+                // Nếu upload và xử lý thành công, hiển thị thông báo thành công và dữ liệu tóm tắt
                 uploadStatus.removeClass().addClass('alert alert-success')
-                    .text('File processed successfully!').show();
+                    .text('File uploaded and processed successfully!').show();
                 dataSummary.html(response.data_summary);
+
+                // Ẩn nút "Upload and Process" sau khi thành công
+                processBtn.hide();
             },
             error: function(xhr) {
                 let errorMessage = 'An error occurred while processing the file.';
@@ -110,5 +115,6 @@ $(document).ready(function() {
         });
     });
 });
+
 </script>
 {% endblock javascripts %}
