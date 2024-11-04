@@ -129,7 +129,7 @@ def process_data(request, file_id):
             # Xử lý dữ liệu bằng phương thức process_data_df
             df = processor.process_data_df(uploaded_file.metadata)
             # Tạo bản tóm tắt dữ liệu sau khi xử lý
-            data_summary = processor.get_summary()
+            data_summary = processor.get_summary_data()
             # Update trạng thái xử lý
             uploaded_file.processed = True
             uploaded_file.validated = True

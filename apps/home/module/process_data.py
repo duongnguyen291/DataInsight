@@ -21,6 +21,7 @@ class ProcessData:
         """
         # Gọi hàm generate_code_process_data để sinh mã code dựa trên metadata
         code = generate_code_process_data(metadata)
+        print("Using:")
         print(code)
         # Thực thi mã code được sinh ra
         # Lưu code dưới dạng hàm 'process' trong ngữ cảnh cục bộ
@@ -32,7 +33,7 @@ class ProcessData:
             self.df = local_context['process'](self.df)
 
         return self.df
-    def get_summary(self):
+    def get_summary_data(self):
         """
         Tạo một bản tóm tắt dữ liệu dưới dạng HTML.
         """

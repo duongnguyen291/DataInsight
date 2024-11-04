@@ -16,7 +16,7 @@ def generate_code_process_data(metadata):
     prompt = f"""
     Given the following metadata, generate Python code to process a pandas DataFrame.
     Metadata: {metadata}
-    ONLY PROVIDE THE PYTHON CODE, START AT import pandas as pd.
+    ONLY PROVIDE THE PYTHON CODE, START WITH import pandas as pd.
     The generated code must include a function named `process(df)` that takes a DataFrame as input and returns the processed DataFrame. Ensure that the code is formatted correctly and performs appropriate data cleaning, transformations, or aggregations based on the metadata provided.
     """
 
@@ -31,15 +31,13 @@ def generate_code_process_data(metadata):
 
         # Lấy mã code từ phản hồi của API
         code =  response.choices[0].message.content.strip()
-        if code.startswith("python"):
-            code = code[len("python"):].strip()
+        print("Before:")
+        print(code)
+        if code.lower().startsWith("python"):
+            code = "\n".join(code.splitlines()[1:]).strip()
+        print("After:")
+        print(code)
         return code
-    except APIConnectionError as e:
-        print("The server could not be reached:", e)
-    except RateLimitError as e:
-        print("Rate limit exceeded. Please try again later:", e)
-    except APIStatusError as e:
-        print(f"API returned a {e.status_code} status code:", e)
     except Exception as e:
         print(f"Error generating code: {e}")
         return """
