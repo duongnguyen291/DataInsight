@@ -13,7 +13,7 @@ from django.shortcuts import render
 import pandas as pd
 from .models import UploadedFile
 from .module.process_data import ProcessData
-
+from .module.visualize_data import VisualizeData
 
 @login_required(login_url="/login/")
 def index(request):
@@ -99,12 +99,24 @@ def upload_file(request):
             }
             uploaded_file.metadata = metadata
             uploaded_file.save()
-
-            # Gọi hàm process_data để xử lý dữ liệu
-            response = process_data(request, uploaded_file.id)
-            
-            return response
-
+            #Process data
+            processor = ProcessData(df)
+            df_processed = processor.process_data_df(metadata)
+            data_summary = processor.get_summary_data()
+            #visualize processed data
+            visualizer = VisualizeData(df_processed)
+            plot_path = visualizer.visualize_data_df(metadata)
+            print("Plot path:",plot_path)
+            uploaded_file.processed = True
+            uploaded_file.validated = True
+            uploaded_file.plotImages.append(plot_path)
+            uploaded_file.save()
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data processed and visualized successfully.',
+                'data_summary': data_summary,
+                'plot_path': plot_path
+            })
         except Exception as e:
             return JsonResponse({
                 'status': 'error',
@@ -160,15 +172,9 @@ def visualize_data(request, file_id):
                 'status': 'error',
                 'message': 'Data not validated for visualization.'
             })
-
-        # Giả lập visualize dữ liệu, sử dụng Pandas hoặc Matplotlib để tạo hình ảnh hoặc biểu đồ
-        df = pd.read_csv(uploaded_file.file.path)  # Hoặc load từ file đã xử lý
-        plot_path = f'temporary/plot_{uploaded_file.file.name}.png'
-        
-        # Ví dụ tạo biểu đồ đơn giản
-        df['some_column'].plot(kind='bar')  # Giả định có cột 'some_column'
-        plt.savefig(plot_path)
-
+        file_path=upload_file.file.path
+        visualizer=VisualizeData.load_data(file_path)
+        plot_path=visualizer.visualize_data_df(uploaded_file.metadata)
         return JsonResponse({
             'status': 'success',
             'plot_path': plot_path
