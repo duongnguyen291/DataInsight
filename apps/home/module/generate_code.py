@@ -52,7 +52,7 @@ def generate_code_visualize_data(metadata):
     Given the following metadata, generate Python code to visualize a pandas DataFrame with an appropriate type of graph using matplotlib.pyplot.
     Metadata: {metadata}
     ONLY PROVIDE PYTHON CODE, START WITH def visualize(df): .ABSOLUTELY DO NOT include python at the start, and DO NOT import anything.
-    The generated code must only include a function named visualize(df) that takes a DataFrame as input, creates a suitable plot, and must saves it as an image file in a folder named 'plotImages' inside /apps/static/assets/img, the function should return the name of the image. The filename should be unique for each plot. Ensure that the code is formatted correctly."""
+    The generated code must only include a function named visualize(df) that takes a DataFrame as input, must creates at least 5 suitable plots, and must saves it as an image file  inside apps\static\assets\img\plotImages, the function should return an array of dictionary with 2 keys, 'imagePath' and 'description'. The filename should be unique for each plot. Ensure that the code is formatted correctly."""
     try:
         # Gọi OpenAI API để sinh mã code
         response = client.chat.completions.create(

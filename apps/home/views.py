@@ -109,7 +109,8 @@ def upload_file(request):
             print("Plot path:",plot_path)
             uploaded_file.processed = True
             uploaded_file.validated = True
-            uploaded_file.plotImages.append(plot_path)
+            print("Example plot:", plot_path[0])
+            uploaded_file.plotImages+=plot_path
             uploaded_file.save()
             return JsonResponse({
                 'status': 'success',
@@ -180,6 +181,21 @@ def visualize_data(request, file_id):
             'plot_path': plot_path
         })
 
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+@login_required(login_url="/login/")
+def get_uploads(request):
+    try:
+        uploaded_files=UploadedFile.objects.all().values('file', 'processed', 'validated', 'created_at', 'updated_at')
+        files_list = list(uploaded_files)
+        print(files_list[0])
+        return JsonResponse({
+            'status':"success",
+            'files':files_list
+        })
     except Exception as e:
         return JsonResponse({
             'status': 'error',

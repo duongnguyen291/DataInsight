@@ -53,7 +53,7 @@
               </form>
               <div id="upload-status" class="alert" role="alert"></div>
               <div id="data-summary"></div>
-              <img id="graph" />
+              <div id="graphs-container"></div>
             </div>
           </div>
         </div>
@@ -69,7 +69,6 @@
     const processBtn = $("#process-btn");
     const uploadStatus = $("#upload-status");
     const dataSummary = $("#data-summary");
-    const graph = $("#graph");
     fileUpload.on("change", function () {
       const file = this.files[0];
       if (file) {
@@ -122,11 +121,24 @@
             .text("File uploaded and processed successfully!")
             .show();
           dataSummary.html(response.data_summary);
-          graph.attr(
-            "src",
-            "static/assets/img/plotImages/" +
-              response.plot_path.split("/").pop()
-          ); // Ẩn nút "Upload and Process" sau khi thành công
+          const plotImages = response.plot_path;
+          const container = document.getElementById("graphs-container");
+          container.innerHTML = "";
+          plotImages.forEach((plotImages) => {
+            // Create a new img element
+            const img = document.createElement("img");
+
+            // Set the src attribute
+            img.src =
+              "static/assets/img/plotImages/" +
+              plotImages.imagePath.split("/").pop();
+
+            // Optionally, add a class or set styling for the images
+            img.classList.add("graph-image");
+
+            // Append the image to the container
+            container.appendChild(img);
+          });
           processBtn.hide();
         },
         error: function (xhr) {

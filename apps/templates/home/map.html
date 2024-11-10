@@ -1,37 +1,104 @@
-{% extends "layouts/base.html" %}
-
-{% block title %} Maps {% endblock %} 
+{% extends "layouts/base.html" %} {% block title %} Maps {% endblock %}
 
 <!-- Specific Page CSS goes HERE  -->
-{% block stylesheets %}{% endblock stylesheets %}
-
-{% block content %}
-
-  <div class="content">
-    <div class="row">
-      <div class="col-md-12">
-        <div class="card card-plain">
-          <div class="card-header">
-            Google Maps
-          </div>
-          <div class="card-body">
-            <div id="map" class="map"></div>
+{% block stylesheets %}<style>
+  .seeBtn button {
+    background-color: rgb(195, 83, 235);
+    border: none;
+    color: white;
+  }
+  .seeBtn button:hover {
+    background-color: rgb(165, 70, 199);
+  }
+</style>
+{% endblock stylesheets %} {% block content %}
+<div class="content">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="upload-file">
+          <div class="formContainer" style="width: 100%">
+            <div class="text-center" style="width: 100%">
+              <table style="width: 100%">
+                <thead>
+                  <tr>
+                    <th>File name</th>
+                    <th>Proccessed</th>
+                    <th>Validated</th>
+                    <th>Created at</th>
+                    <th>Recently updated at</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <div id="data-summary"></div>
+              <div id="graphs-container"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
 {% endblock content %}
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
 
-  <script>
-    $(document).ready(function() {
-      // Javascript method's body can be found in assets/js/demos.js
-      demo.initGoogleMaps();
-    });
-  </script>
+<script>
+  async function loadUploads() {
+    try {
+      const response = await fetch("/getUploads/");
+      const data = await response.json();
+
+      if (data.status === "success") {
+        const tableBody = document.querySelector("table tbody");
+        tableBody.innerHTML = ""; // Clear existing rows
+
+        data.files.forEach((file) => {
+          const row = document.createElement("tr");
+
+          // Create and populate cells
+          const nameCell = document.createElement("td");
+          nameCell.textContent = file.file.split("/").pop(); // Get file name from path
+
+          const processedCell = document.createElement("td");
+          processedCell.textContent = file.processed ? "Yes" : "No";
+
+          const validatedCell = document.createElement("td");
+          validatedCell.textContent = file.validated ? "Yes" : "No";
+          const createdAtCell = document.createElement("td");
+          createdAtCell.textContent = new Date(
+            file.created_at
+          ).toLocaleDateString("en-GB");
+          const updatedAtCell = document.createElement("td");
+          updatedAtCell.textContent = new Date(
+            file.updated_at
+          ).toLocaleDateString("en-GB");
+          const actionCell = document.createElement("td");
+          actionCell.innerHTML = `<button onclick="handleAction(${file.id})">Details</button>`;
+          actionCell.classList.add("seeBtn");
+          // Append cells to row
+          row.appendChild(nameCell);
+          row.appendChild(processedCell);
+          row.appendChild(validatedCell);
+          row.appendChild(createdAtCell);
+          row.appendChild(updatedAtCell);
+          row.appendChild(actionCell);
+
+          // Append row to table body
+          tableBody.appendChild(row);
+        });
+      } else {
+        console.error("Failed to load files:", data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching uploads:", error);
+    }
+  }
+  document.addEventListener("DOMContentLoaded", loadUploads);
+</script>
 
 {% endblock javascripts %}
