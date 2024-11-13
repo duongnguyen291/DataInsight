@@ -14,7 +14,7 @@ import pandas as pd
 from .models import UploadedFile
 from .module.process_data import ProcessData
 from .module.visualize_data import VisualizeData
-
+from .module.get_insight import get_insight
 @login_required(login_url="/login/")
 def index(request):
     context = {'segment': 'index'}
@@ -98,7 +98,6 @@ def upload_file(request):
                 'file_name': file.name
             }
             uploaded_file.metadata = metadata
-            uploaded_file.save()
             #Process data
             processor = ProcessData(df)
             df_processed = processor.process_data_df(metadata)
@@ -106,10 +105,11 @@ def upload_file(request):
             #visualize processed data
             visualizer = VisualizeData(df_processed)
             plot_path = visualizer.visualize_data_df(metadata)
-            print("Plot path:",plot_path)
+            for plot in plot_path:
+                print(plot)
+                plot["insight"]=get_insight(plot["imagePath"],plot["description"])
             uploaded_file.processed = True
             uploaded_file.validated = True
-            print("Example plot:", plot_path[0])
             uploaded_file.plotImages+=plot_path
             uploaded_file.save()
             return JsonResponse({
@@ -189,13 +189,26 @@ def visualize_data(request, file_id):
 @login_required(login_url="/login/")
 def get_uploads(request):
     try:
-        uploaded_files=UploadedFile.objects.all().values('file', 'processed', 'validated', 'created_at', 'updated_at')
+        uploaded_files=UploadedFile.objects.all().values('file', 'processed', 'validated', 'created_at', 'updated_at','id','plotImages')
         files_list = list(uploaded_files)
-        print(files_list[0])
         return JsonResponse({
             'status':"success",
             'files':files_list
         })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+@login_required(login_url="/login/")
+def get_detais(request,file_id):
+    try:
+        uploaded_file = UploadedFile.objects.filter(id=file_id).values('id', 'file', 'processed', 'validated', 'created_at', 'updated_at','plotImages').first()
+        return JsonResponse({
+            'status':"success",
+            "file":uploaded_file
+        })
+
     except Exception as e:
         return JsonResponse({
             'status': 'error',

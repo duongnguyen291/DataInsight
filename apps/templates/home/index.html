@@ -21,6 +21,11 @@
   #data-summary td {
     color: black !important;
   }
+  .insight-text {
+    color: black !important;
+    font-size: medium;
+    white-space: pre-wrap;
+  }
 </style>
 {% endblock stylesheets %} {% block content %}
 <div class="content">
@@ -85,7 +90,6 @@
 
       const formData = new FormData();
       const file = fileUpload[0].files[0];
-
       if (!file) {
         uploadStatus
           .removeClass()
@@ -124,20 +128,24 @@
           const plotImages = response.plot_path;
           const container = document.getElementById("graphs-container");
           container.innerHTML = "";
-          plotImages.forEach((plotImages) => {
+          plotImages.forEach((plotImage) => {
+            console.log(plotImage.insight);
             // Create a new img element
             const img = document.createElement("img");
-
+            const insight = document.createElement("p");
+            insight.innerHTML = plotImage.insight;
+            insight.classList.add("insight-text");
             // Set the src attribute
             img.src =
               "static/assets/img/plotImages/" +
-              plotImages.imagePath.split("/").pop();
+              plotImage.imagePath.split("/").pop();
 
             // Optionally, add a class or set styling for the images
             img.classList.add("graph-image");
 
             // Append the image to the container
             container.appendChild(img);
+            container.appendChild(insight);
           });
           processBtn.hide();
         },

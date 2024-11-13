@@ -6,9 +6,31 @@
     background-color: rgb(195, 83, 235);
     border: none;
     color: white;
+    padding: 10px 15px;
   }
   .seeBtn button:hover {
     background-color: rgb(165, 70, 199);
+  }
+  .fileTable thead tr {
+    background-color: rgb(165, 70, 199);
+    color: white;
+  }
+
+  .fileTable tr:nth-child(even) {
+    background-color: #ebebeb;
+  }
+  .fileTable td,
+  .fileTable th {
+    padding: 10px;
+  }
+  .insight-text {
+    color: black !important;
+    font-size: medium;
+    white-space: pre-wrap;
+  }
+  #graphs-container {
+    background-color: rgb(239, 239, 239);
+    padding-top: 40px;
   }
 </style>
 {% endblock stylesheets %} {% block content %}
@@ -19,7 +41,7 @@
         <div class="upload-file">
           <div class="formContainer" style="width: 100%">
             <div class="text-center" style="width: 100%">
-              <table style="width: 100%">
+              <table style="width: 100%" class="fileTable">
                 <thead>
                   <tr>
                     <th>File name</th>
@@ -48,6 +70,36 @@
 {% block javascripts %}
 
 <script>
+  async function handleAction(fileId) {
+    try {
+      const response = await fetch(`/getDetail/${fileId}/`);
+      const data = await response.json();
+      const plotImages = data.file.plotImages;
+      const container = document.getElementById("graphs-container");
+      container.innerHTML = "";
+      plotImages.forEach((plotImage) => {
+        console.log(plotImage.insight);
+        // Create a new img element
+        const img = document.createElement("img");
+        const insight = document.createElement("p");
+        insight.innerHTML = plotImage.insight;
+        insight.classList.add("insight-text");
+        // Set the src attribute
+        img.src =
+          "static/assets/img/plotImages/" +
+          plotImage.imagePath.split("/").pop();
+
+        // Optionally, add a class or set styling for the images
+        img.classList.add("graph-image");
+
+        // Append the image to the container
+        container.appendChild(img);
+        container.appendChild(insight);
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  }
   async function loadUploads() {
     try {
       const response = await fetch("/getUploads/");
