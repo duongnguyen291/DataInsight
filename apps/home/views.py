@@ -13,8 +13,8 @@ from django.shortcuts import render
 import pandas as pd
 from .models import UploadedFile
 from .module.process_data import ProcessData
-
-
+from .module.visualize_data import VisualizeData
+from .module.get_insight import get_insight
 @login_required(login_url="/login/")
 def index(request):
     context = {'segment': 'index'}
@@ -98,13 +98,26 @@ def upload_file(request):
                 'file_name': file.name
             }
             uploaded_file.metadata = metadata
+            #Process data
+            processor = ProcessData(df)
+            df_processed = processor.process_data_df(metadata)
+            data_summary = processor.get_summary_data()
+            #visualize processed data
+            visualizer = VisualizeData(df_processed)
+            plot_path = visualizer.visualize_data_df(metadata)
+            for plot in plot_path:
+                print(plot)
+                plot["insight"]=get_insight(plot["imagePath"],plot["description"])
+            uploaded_file.processed = True
+            uploaded_file.validated = True
+            uploaded_file.plotImages+=plot_path
             uploaded_file.save()
-
-            # Gọi hàm process_data để xử lý dữ liệu
-            response = process_data(request, uploaded_file.id)
-            
-            return response
-
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data processed and visualized successfully.',
+                'data_summary': data_summary,
+                'plot_path': plot_path
+            })
         except Exception as e:
             return JsonResponse({
                 'status': 'error',
@@ -160,18 +173,40 @@ def visualize_data(request, file_id):
                 'status': 'error',
                 'message': 'Data not validated for visualization.'
             })
-
-        # Giả lập visualize dữ liệu, sử dụng Pandas hoặc Matplotlib để tạo hình ảnh hoặc biểu đồ
-        df = pd.read_csv(uploaded_file.file.path)  # Hoặc load từ file đã xử lý
-        plot_path = f'temporary/plot_{uploaded_file.file.name}.png'
-        
-        # Ví dụ tạo biểu đồ đơn giản
-        df['some_column'].plot(kind='bar')  # Giả định có cột 'some_column'
-        plt.savefig(plot_path)
-
+        file_path=upload_file.file.path
+        visualizer=VisualizeData.load_data(file_path)
+        plot_path=visualizer.visualize_data_df(uploaded_file.metadata)
         return JsonResponse({
             'status': 'success',
             'plot_path': plot_path
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+@login_required(login_url="/login/")
+def get_uploads(request):
+    try:
+        uploaded_files=UploadedFile.objects.all().values('file', 'processed', 'validated', 'created_at', 'updated_at','id','plotImages')
+        files_list = list(uploaded_files)
+        return JsonResponse({
+            'status':"success",
+            'files':files_list
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+@login_required(login_url="/login/")
+def get_detais(request,file_id):
+    try:
+        uploaded_file = UploadedFile.objects.filter(id=file_id).values('id', 'file', 'processed', 'validated', 'created_at', 'updated_at','plotImages').first()
+        return JsonResponse({
+            'status':"success",
+            "file":uploaded_file
         })
 
     except Exception as e:

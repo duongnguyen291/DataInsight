@@ -1,5 +1,8 @@
 import pandas as pd
 from .generate_code import generate_code_process_data
+import os
+import time
+import matplotlib.pyplot as plt
 class ProcessData:
     def __init__(self, df):
         self.df = df
@@ -26,7 +29,7 @@ class ProcessData:
         # Thực thi mã code được sinh ra
         # Lưu code dưới dạng hàm 'process' trong ngữ cảnh cục bộ
         local_context = {}
-        exec(code, {}, local_context)
+        exec(code, globals(), local_context)
 
         # Gọi hàm process trên DataFrame
         if 'process' in local_context:

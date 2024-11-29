@@ -14,6 +14,7 @@ class UploadedFile(models.Model):
     validated = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    plotImages=models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return self.file.name
