@@ -41,7 +41,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'apps.home'  # Enable the inner home (home)
 ]
-
+MINIO_STORAGE = {
+    'ENDPOINT': '127.0.0.1:9000',
+    'ACCESS_KEY': 'FJsC5z23tsflkDSeczO2',
+    'SECRET_KEY': 'toqvV4CoYh4OcPsCbz4gbeDYLuXkVq0Tamfxrc1U',
+    'SECURE': False,  # Use True if HTTPS is enabled
+    'BUCKET_NAME': 'datainsight',
+}
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',

@@ -1,8 +1,8 @@
 # [Black Dashboard Django](https://www.creative-tim.com/product/black-dashboard-django) [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter)](https://twitter.com/home?status=Material%20Dashboard,%20a%20free%20Material%20Bootstrap%204%20Admin%20Template%20%E2%9D%A4%EF%B8%8F%20https%3A//bit.ly/2Lyat1Y%20%23bootstrap%20%23material%20%23design%20%23developers%20%23freebie%20%20via%20%40CreativeTim)
 
- ![version](https://img.shields.io/badge/version-1.0.1-blue.svg) [![GitHub issues open](https://img.shields.io/github/issues/creativetimofficial/black-dashboard-django.svg?maxAge=2592000)](https://github.com/creativetimofficial/black-dashboard-django/issues?q=is%3Aopen+is%3Aissue) [![GitHub issues closed](https://img.shields.io/github/issues-closed-raw/creativetimofficial/black-dashboard-django.svg?maxAge=2592000)](https://github.com/creativetimofficial/black-dashboard-django/issues?q=is%3Aissue+is%3Aclosed) [![Join the chat at https://gitter.im/NIT-dgp/General](https://badges.gitter.im/NIT-dgp/General.svg)](https://gitter.im/creative-tim-general/Lobby) [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/E4aHAQy)
+![version](https://img.shields.io/badge/version-1.0.1-blue.svg) [![GitHub issues open](https://img.shields.io/github/issues/creativetimofficial/black-dashboard-django.svg?maxAge=2592000)](https://github.com/creativetimofficial/black-dashboard-django/issues?q=is%3Aopen+is%3Aissue) [![GitHub issues closed](https://img.shields.io/github/issues-closed-raw/creativetimofficial/black-dashboard-django.svg?maxAge=2592000)](https://github.com/creativetimofficial/black-dashboard-django/issues?q=is%3Aissue+is%3Aclosed) [![Join the chat at https://gitter.im/NIT-dgp/General](https://badges.gitter.im/NIT-dgp/General.svg)](https://gitter.im/creative-tim-general/Lobby) [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/E4aHAQy)
 
-Open-source **[Django Template](https://www.creative-tim.com/templates/django)** crafted on top of **Black Dashboard**, a popular Bootstrap 4 design. Start your development with a modern, dark-themed Bootstrap 4 Admin template for Django. It features a huge number of components built to fit together and look fantastic. 
+Open-source **[Django Template](https://www.creative-tim.com/templates/django)** crafted on top of **Black Dashboard**, a popular Bootstrap 4 design. Start your development with a modern, dark-themed Bootstrap 4 Admin template for Django. It features a huge number of components built to fit together and look fantastic.
 
 - ✅ `Up-to-date dependencies`
 - ✅ Database: `sqlite`
@@ -18,22 +18,22 @@ Open-source **[Django Template](https://www.creative-tim.com/templates/django)**
 
 ## Table of Contents
 
-* [Demo](#demo)
-* [Quick Start](#quick-start)
-* [Documentation](#documentation)
-* [File Structure](#file-structure)
-* [Browser Support](#browser-support)
-* [Resources](#resources)
-* [Reporting Issues](#reporting-issues)
-* [Technical Support or Questions](#technical-support-or-questions)
-* [Licensing](#licensing)
-* [Useful Links](#useful-links)
+- [Demo](#demo)
+- [Quick Start](#quick-start)
+- [Documentation](#documentation)
+- [File Structure](#file-structure)
+- [Browser Support](#browser-support)
+- [Resources](#resources)
+- [Reporting Issues](#reporting-issues)
+- [Technical Support or Questions](#technical-support-or-questions)
+- [Licensing](#licensing)
+- [Useful Links](#useful-links)
 
 <br />
 
 ## Demo
 
-> To authenticate use the default credentials ***test / ApS12_ZZs8*** or create a new user on the **registration page**.
+> To authenticate use the default credentials **_test / ApS12_ZZs8_** or create a new user on the **registration page**.
 
 - **Black Dashboard Django** [Login Page](https://www.creative-tim.com/live/black-dashboard-django)
 
@@ -50,9 +50,9 @@ $ cd django-black-dashboard
 
 <br />
 
-### 👉 Set Up for `Unix`, `MacOS` 
+### 👉 Set Up for `Unix`, `MacOS`
 
-> Install modules via `VENV`  
+> Install modules via `VENV`
 
 ```bash
 $ virtualenv env
@@ -77,7 +77,7 @@ $ python manage.py migrate
 $ python manage.py runserver
 ```
 
-At this point, the app runs at `http://127.0.0.1:8000/`. 
+At this point, the app runs at `http://127.0.0.1:8000/`.
 
 > Note: To use the app, please access the registration page and create a new user. After authentication, the app will unlock the private pages.
 
@@ -90,6 +90,7 @@ The documentation for the **Black Dashboard Django** is hosted at our [website](
 <br />
 
 ## File Structure
+
 Within the download you'll find the following directories and files:
 
 ```bash
@@ -104,12 +105,12 @@ Within the download you'll find the following directories and files:
    |    |
    |    |-- home/                          # A simple app that serve HTML files
    |    |    |-- views.py                  # Serve HTML pages for authenticated users
-   |    |    |-- urls.py                   # Define some super simple routes  
+   |    |    |-- urls.py                   # Define some super simple routes
    |    |
    |    |-- authentication/                # Handles auth routes (login and register)
-   |    |    |-- urls.py                   # Define authentication routes  
-   |    |    |-- views.py                  # Handles login and registration  
-   |    |    |-- forms.py                  # Define auth forms (login and register) 
+   |    |    |-- urls.py                   # Define authentication routes
+   |    |    |-- views.py                  # Handles login and registration
+   |    |    |-- forms.py                  # Define auth forms (login and register)
    |    |
    |    |-- static/
    |    |    |-- <css, JS, images>         # CSS files, Javascripts files
@@ -149,7 +150,7 @@ Within the download you'll find the following directories and files:
 - Django bootstrapper `manage.py` uses `core/settings.py` as the main configuration file
 - `core/settings.py` loads the app magic from `.env` file
 - Redirect the guest users to Login page
-- Unlock the pages served by *app* node for authenticated users
+- Unlock the pages served by _app_ node for authenticated users
 
 <br />
 
@@ -216,9 +217,9 @@ Black Dashboard is a premium [Bootstrap](https://www.admin-dashboards.com/bootst
 - ✅ `Sections` covered by the design:
   - ✅ **Admin section** (reserved for superusers)
   - ✅ **Authentication**: `Django.contrib.AUTH`, Registration
-  - ✅ **All Pages** available in for ordinary users 
+  - ✅ **All Pages** available in for ordinary users
 - ✅ `Docker`
-- 🚀 `Deployment` 
+- 🚀 `Deployment`
   - `CI/CD` flow via `Render`
 
 <br />
@@ -228,4 +229,5 @@ Black Dashboard is a premium [Bootstrap](https://www.admin-dashboards.com/bootst
 <br />
 
 ---
+
 [Black Dashboard Django](https://www.creative-tim.com/product/black-dashboard-django) - Provided by [Creative Tim](https://www.creative-tim.com/) and [AppSeed](https://appseed.us).

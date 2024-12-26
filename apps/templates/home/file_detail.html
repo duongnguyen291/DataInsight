@@ -1,0 +1,231 @@
+{% extends "layouts/base.html" %} {% block title %} Detail {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}<style>
+  .seeBtn button {
+    background-color: rgb(195, 83, 235);
+    border: none;
+    color: white;
+    padding: 10px 15px;
+  }
+  .seeBtn button:hover {
+    background-color: rgb(165, 70, 199);
+  }
+  .insight-text {
+    color: black !important;
+    font-size: medium;
+    text-align: left;
+    width: 90%;
+    margin: auto;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    white-space: pre-wrap;
+  }
+  .graphs-container {
+    background-color: rgb(239, 239, 239);
+  }
+  .graphs-container p {
+    font-size: 20px;
+  }
+  .graphs-container h2 {
+    margin-bottom: 20px;
+    margin-top: 20px;
+  }
+  .graphs-container h1,
+  .graphs-container h2,
+  .graphs-container h4 {
+    color: black;
+  }
+  .graphs-container h4 {
+    font-size: 20px;
+  }
+  .graphs-container p {
+    color: black;
+  }
+  .text-center {
+    background-color: rgb(239, 239, 239);
+  }
+  .input-field p {
+    color: black;
+    font-size: medium;
+  }
+  #graphs-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  #graphs-container h4 {
+    margin-top: 20px;
+  }
+  #prompt {
+    width: 80%;
+    height: 60px;
+    font-size: 18px;
+  }
+  .input-field h2 {
+    color: black;
+    padding-top: 30px;
+  }
+  .process-btn {
+    background-color: rgb(195, 83, 235);
+    border: none;
+    color: white;
+    margin-top: 20px;
+    padding: 10px 45px;
+  }
+  .process-btn:hover {
+    background-color: rgb(168, 71, 203);
+  }
+  @keyframes rollDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 200px; /* Adjust based on your content */
+    }
+  }
+
+  @keyframes rollUp {
+    from {
+      opacity: 1;
+      max-height: 200px; /* Match rollDown */
+    }
+    to {
+      opacity: 0;
+      max-height: 0;
+    }
+  }
+  .toggle-button {
+    cursor: pointer;
+    background-color: rgb(195, 83, 235);
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 14px;
+    display: inline-block;
+  }
+  .toggle-button:hover {
+    background-color: rgb(168, 71, 203);
+  }
+  .plot-div {
+    margin-bottom: 20px;
+  }
+  .regenerate-btn {
+    background-color: yellow;
+    color: black;
+    border: none;
+    padding: 10px 10px;
+    font-size: 14px;
+    display: inline-block;
+  }
+  .regenerate-btn:hover {
+    background-color: rgb(209, 209, 0);
+  }
+</style>
+{% endblock stylesheets %} {% block content %}
+<div class="content">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="upload-file">
+          <div class="formContainer" style="width: 100%">
+            <div class="text-center" style="width: 100%">
+              <form id="upload-form" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="file-name" id="file-name"></div>
+                <div class="input-field">
+                  <h2>Choose a prompt for the insight you want to generate</h2>
+                  <textarea id="prompt" name="prompt"></textarea>
+                </div>
+                <button class="process-btn">Add insight</button>
+                <button class="regenerate-btn">Re-generate insights</button>
+              </form>
+              <div id="upload-status" class="alert" role="alert"></div>
+              <div id="data-summary"></div>
+              <div class="graphs-container">
+                <h1>File Details</h1>
+                <p><strong>File Name:</strong> {{ fileData.file }}</p>
+                <p>
+                  <strong>Processed:</strong>
+                  {{fileData.processed|yesno:"Yes,No"}}
+                </p>
+                <p>
+                  <strong>Validated:</strong>
+                  {{fileData.validated|yesno:"Yes,No"}}
+                </p>
+                <p><strong>Created At:</strong> {{ fileData.created_at }}</p>
+                <p><strong>Updated At:</strong> {{ fileData.updated_at }}</p>
+
+                <h2>Plot Insight(s)</h2>
+                <div id="graphs-container"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+<script>
+  const id = "{{fileData.id}}";
+  async function loadPlots() {
+    try {
+      const response = await fetch(`/getPlots/${id}/`);
+      const data = await response.json();
+      console.log(data);
+      if (data.status === "success") {
+        const plotImages = data.plot_path;
+        const container = document.getElementById("graphs-container");
+        container.innerHTML = "";
+        plotImages.forEach((plotImage, index) => {
+          // Create a new img element
+          const plotDiv = document.createElement("div");
+          plotDiv.setAttribute("id", `plot-${index}`);
+          const description = document.createElement("h4");
+          const insight = document.createElement("p");
+          description.innerHTML = plotImage.description;
+          insight.innerHTML = plotImage.insight;
+          insight.classList.add("insight-text");
+          insight.style.display = "none";
+          //Button to reveal insight
+          const toggleButton = document.createElement("button");
+          toggleButton.classList.add("toggle-button");
+          toggleButton.innerHTML = "Show Insight ▼";
+          toggleButton.addEventListener("click", () => {
+            if (insight.style.display === "none") {
+              insight.style.display = "block";
+              insight.style.animation = "rollDown 0.3s ease-out";
+              toggleButton.innerHTML = "Hide Insight ▲";
+            } else {
+              insight.style.animation = "rollUp 0.3s ease-out";
+              setTimeout(() => {
+                insight.style.display = "none";
+              }, 300); // Match animation duration
+              toggleButton.innerHTML = "Show Insight ▼";
+            }
+          });
+          // Add the plot html
+          // Append the image to the container
+          container.appendChild(description);
+          container.appendChild(plotDiv);
+          container.appendChild(toggleButton);
+          container.appendChild(insight);
+          Plotly.react(`plot-${index}`, JSON.parse(plotImage.plotDiv), {});
+        });
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  document.addEventListener("DOMContentLoaded", loadPlots);
+</script>
+
+{% endblock javascripts %}

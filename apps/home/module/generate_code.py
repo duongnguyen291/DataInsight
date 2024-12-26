@@ -6,10 +6,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 # Load API key từ file .env
-load_dotenv()
+load_dotenv(".env", override=True)
+print(os.environ.get("API_KEY"))
 client = OpenAI(
-    api_key=os.environ.get("API_KEY"),
+    api_key=os.environ.get("API_KEY")
 )
+print(os.environ.get("API_KEY"))
+NGROK_URL=os.environ.get("NGROK_URL")
+print(NGROK_URL)
 
 def generate_code_process_data(metadata):
     """
@@ -49,12 +53,16 @@ def process(df):
     df.dropna(inplace=True)
     return df
 """
-def generate_code_visualize_data(metadata):
+#Generate code for visualizing data
+def generate_code_visualize_data(metadata,needs):
+    print("Given prompt:",needs)
     prompt=f"""
-    Given the following metadata, generate Python code to visualize a pandas DataFrame with an appropriate type of graph using matplotlib.pyplot.
+    Given the following metadata, generate Python code to visualize a pandas DataFrame with appropriate graph and must follow the user's needs (if exist) using plotly.
     Metadata: {metadata}
-    ONLY PROVIDE PYTHON CODE, START WITH def visualize(df): .ABSOLUTELY DO NOT include python at the start, and DO NOT import anything.
-    The generated code must only include a function named visualize(df) that takes a DataFrame as input, must creates at least 5 suitable plots, and must saves it as an image file  inside apps\static\assets\img\plotImages, the function must return an array of dictionary with 2 keys, 'imagePath' and 'description'. The filename should be unique for each plot. Ensure that the code is formatted correctly."""
+    Needs:{needs}
+    ONLY PROVIDE PYTHON CODE, START WITH def visualize(df): . ABSOLUTELY DO NOT include python at the start, and DO NOT import anything.
+    The generated code must only include a function named visualize(df) that takes a DataFrame as input, creates multiple interactive plots using plotly that can help the user gain insights based on their needs, and returns an array of dictionaries with 2 keys: 'plot' and 'description'. The 'plot' should be a plot created using plotly, and use update_layout to set the height to 600, and 'description' should provide insights about the plot. Ensure the plots are relevant to the metadata and user needs.
+    """
     try:
         # Gọi OpenAI API để sinh mã code
         response = client.chat.completions.create(

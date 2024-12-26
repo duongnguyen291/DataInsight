@@ -26,6 +26,11 @@
   .insight-text {
     color: black !important;
     font-size: medium;
+    text-align: left;
+    width: 90%;
+    margin: auto;
+    margin-top: 40px;
+    margin-bottom: 40px;
     white-space: pre-wrap;
   }
   #graphs-container {
@@ -71,34 +76,7 @@
 
 <script>
   async function handleAction(fileId) {
-    try {
-      const response = await fetch(`/getDetail/${fileId}/`);
-      const data = await response.json();
-      const plotImages = data.file.plotImages;
-      const container = document.getElementById("graphs-container");
-      container.innerHTML = "";
-      plotImages.forEach((plotImage) => {
-        console.log(plotImage.insight);
-        // Create a new img element
-        const img = document.createElement("img");
-        const insight = document.createElement("p");
-        insight.innerHTML = plotImage.insight;
-        insight.classList.add("insight-text");
-        // Set the src attribute
-        img.src =
-          "static/assets/img/plotImages/" +
-          plotImage.imagePath.split("/").pop();
-
-        // Optionally, add a class or set styling for the images
-        img.classList.add("graph-image");
-
-        // Append the image to the container
-        container.appendChild(img);
-        container.appendChild(insight);
-      });
-    } catch (err) {
-      console.log(err);
-    }
+    window.location.href = `/getDetails/${fileId}/`;
   }
   async function loadUploads() {
     try {

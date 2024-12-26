@@ -24,7 +24,26 @@
   .insight-text {
     color: black !important;
     font-size: medium;
+    text-align: left;
+    margin-top: 20px;
+    width: 90%;
+    margin: auto;
+    margin-bottom: 20px;
     white-space: pre-wrap;
+  }
+  #graphs-container {
+    background-color: rgb(244, 244, 244);
+    padding-top: 40px;
+    height: fit-content;
+  }
+  .input-field {
+  }
+  .input-field p {
+    color: black;
+    font-size: medium;
+  }
+  .input-field textarea {
+    width: 50%;
   }
 </style>
 {% endblock stylesheets %} {% block content %}
@@ -47,6 +66,10 @@
                   Choose File
                 </label>
                 <div class="file-name" id="file-name"></div>
+                <div class="input-field">
+                  <p>Choose a prompt for the insight you want to see</p>
+                  <textarea id="prompt" name="prompt"></textarea>
+                </div>
                 <button
                   type="submit"
                   class="btn btn-success mt-3"
@@ -128,24 +151,18 @@
           const plotImages = response.plot_path;
           const container = document.getElementById("graphs-container");
           container.innerHTML = "";
-          plotImages.forEach((plotImage) => {
-            console.log(plotImage.insight);
+          plotImages.forEach((plotImage, index) => {
             // Create a new img element
-            const img = document.createElement("img");
+            const plotDiv = document.createElement("div");
+            plotDiv.setAttribute("id", `plot-${index}`);
             const insight = document.createElement("p");
             insight.innerHTML = plotImage.insight;
             insight.classList.add("insight-text");
-            // Set the src attribute
-            img.src =
-              "static/assets/img/plotImages/" +
-              plotImage.imagePath.split("/").pop();
-
-            // Optionally, add a class or set styling for the images
-            img.classList.add("graph-image");
-
+            // Add the plot html
             // Append the image to the container
-            container.appendChild(img);
+            container.appendChild(plotDiv);
             container.appendChild(insight);
+            Plotly.react(`plot-${index}`, JSON.parse(plotImage.plotDiv), {});
           });
           processBtn.hide();
         },
