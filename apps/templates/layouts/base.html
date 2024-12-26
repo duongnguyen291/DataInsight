@@ -36,7 +36,7 @@
     <link href="{{ ASSETS_ROOT }}/css/theme-switcher.css" rel="stylesheet"/>
     <!-- CSS Just for demo purpose, don't include it in your project -->
     <link href="{{ ASSETS_ROOT }}/demo/demo.css" rel="stylesheet"/>
-
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
     <!-- Specific Page CSS goes HERE  -->
     {% block stylesheets %}{% endblock stylesheets %}
         
@@ -52,7 +52,7 @@
             {% include 'includes/navigation.html' %}
 
             {% block content %}{% endblock content %}
-
+            
             {% include 'includes/footer.html' %}
 
         </div>

@@ -1,120 +1,184 @@
-{% extends "layouts/base.html" %}
-
-{% block title %} Dashboard {% endblock %} 
-
-{% block stylesheets %}
+{% extends "layouts/base.html" %} {% block title %} Dashboard {% endblock %}
+{%block stylesheets %}
 <style>
-    .file-name {
-        margin-top: 10px;
-        display: none;
-    }
-    #upload-status {
-        margin-top: 10px;
-        display: none;
-    }
-    #data-summary {
-        margin-top: 20px;
-    }
+  .file-name {
+    margin-top: 10px;
+    display: none;
+  }
+  #upload-status {
+    margin-top: 10px;
+    display: none;
+  }
+  #data-summary {
+    margin-top: 20px;
+    overflow-x: scroll;
+    width: 100%;
+  }
+  .formContainer {
+    width: 100%;
+  }
+  #data-summary th,
+  #data-summary td {
+    color: black !important;
+  }
+  .insight-text {
+    color: black !important;
+    font-size: medium;
+    text-align: left;
+    margin-top: 20px;
+    width: 90%;
+    margin: auto;
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+  }
+  #graphs-container {
+    background-color: rgb(244, 244, 244);
+    padding-top: 40px;
+    height: fit-content;
+  }
+  .input-field {
+  }
+  .input-field p {
+    color: black;
+    font-size: medium;
+  }
+  .input-field textarea {
+    width: 50%;
+  }
 </style>
-{% endblock stylesheets %}
-
-{% block content %}
-    <div class="content">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="upload-file">
-                        <div class="row justify-content-center">
-                            <div class="col-sm-6 text-center">
-                                <form id="upload-form" enctype="multipart/form-data">
-                                    {% csrf_token %}
-                                    <label for="file-upload" class="btn btn-primary">
-                                        <input type="file" id="file-upload" style="display: none;" accept=".csv,.xlsx,.xls">
-                                        Choose File
-                                    </label>
-                                    <div class="file-name" id="file-name"></div>
-                                    <button type="submit" class="btn btn-success mt-3" id="process-btn" style="display: none;">
-                                        Upload and Process
-                                    </button>
-                                </form>
-                                <div id="upload-status" class="alert" role="alert"></div>
-                                <div id="data-summary"></div>
-                            </div>
-                        </div>
-                    </div>
+{% endblock stylesheets %} {% block content %}
+<div class="content">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="upload-file">
+          <div class="formContainer">
+            <div class="text-center">
+              <form id="upload-form" enctype="multipart/form-data">
+                {% csrf_token %}
+                <label for="file-upload" class="btn btn-primary">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    style="display: none"
+                    accept=".csv,.xlsx,.xls"
+                  />
+                  Choose File
+                </label>
+                <div class="file-name" id="file-name"></div>
+                <div class="input-field">
+                  <p>Choose a prompt for the insight you want to see</p>
+                  <textarea id="prompt" name="prompt"></textarea>
                 </div>
+                <button
+                  type="submit"
+                  class="btn btn-success mt-3"
+                  id="process-btn"
+                  style="display: none"
+                >
+                  Upload and Process
+                </button>
+              </form>
+              <div id="upload-status" class="alert" role="alert"></div>
+              <div id="data-summary"></div>
+              <div id="graphs-container"></div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
-{% endblock content %}
-
-{% block javascripts %}
+  </div>
+</div>
+{% endblock content %} {% block javascripts %}
 <script>
-$(document).ready(function() {
-    const fileUpload = $('#file-upload');
-    const fileName = $('#file-name');
-    const processBtn = $('#process-btn');
-    const uploadStatus = $('#upload-status');
-    const dataSummary = $('#data-summary');
-
-    fileUpload.on('change', function() {
-        const file = this.files[0];
-        if (file) {
-            fileName.text('Selected file: ' + file.name).show();
-            processBtn.show();
-        } else {
-            fileName.hide();
-            processBtn.hide();
-        }
+  $(document).ready(function () {
+    const fileUpload = $("#file-upload");
+    const fileName = $("#file-name");
+    const processBtn = $("#process-btn");
+    const uploadStatus = $("#upload-status");
+    const dataSummary = $("#data-summary");
+    fileUpload.on("change", function () {
+      const file = this.files[0];
+      if (file) {
+        fileName.text("Selected file: " + file.name).show();
+        processBtn.show();
+      } else {
+        fileName.hide();
+        processBtn.hide();
+      }
     });
 
-    $('#upload-form').on('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData();
-        const file = fileUpload[0].files[0];
-        
-        if (!file) {
-            uploadStatus.removeClass().addClass('alert alert-danger')
-                .text('Please select a file first.').show();
-            return;
-        }
+    $("#upload-form").on("submit", function (e) {
+      e.preventDefault();
 
-        formData.append('file', file);
+      const formData = new FormData();
+      const file = fileUpload[0].files[0];
+      if (!file) {
+        uploadStatus
+          .removeClass()
+          .addClass("alert alert-danger")
+          .text("Please select a file first.")
+          .show();
+        return;
+      }
 
-        // Cập nhật trạng thái upload và xử lý dữ liệu
-        uploadStatus.removeClass().addClass('alert alert-info')
-            .text('Uploading and Processing...').show();
-        
-        $.ajax({
-            url: '/uploads/',  // Đảm bảo URL này trỏ đúng đến hàm `upload_file`
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val()
-            },
-            success: function(response) {
-                // Nếu upload và xử lý thành công, hiển thị thông báo thành công và dữ liệu tóm tắt
-                uploadStatus.removeClass().addClass('alert alert-success')
-                    .text('File uploaded and processed successfully!').show();
-                dataSummary.html(response.data_summary);
+      formData.append("file", file);
 
-                // Ẩn nút "Upload and Process" sau khi thành công
-                processBtn.hide();
-            },
-            error: function(xhr) {
-                let errorMessage = 'An error occurred while processing the file.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                uploadStatus.removeClass().addClass('alert alert-danger')
-                    .text(errorMessage).show();
-            }
-        });
+      // Cập nhật trạng thái upload và xử lý dữ liệu
+      uploadStatus
+        .removeClass()
+        .addClass("alert alert-info")
+        .text("Uploading and Processing...")
+        .show();
+
+      $.ajax({
+        url: "/uploads/", // Đảm bảo URL này trỏ đúng đến hàm `upload_file`
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+          "X-CSRFToken": $("input[name=csrfmiddlewaretoken]").val(),
+        },
+        success: function (response) {
+          // Nếu upload và xử lý thành công, hiển thị thông báo thành công và dữ liệu tóm tắt
+          uploadStatus
+            .removeClass()
+            .addClass("alert alert-success")
+            .text("File uploaded and processed successfully!")
+            .show();
+          dataSummary.html(response.data_summary);
+          const plotImages = response.plot_path;
+          const container = document.getElementById("graphs-container");
+          container.innerHTML = "";
+          plotImages.forEach((plotImage, index) => {
+            // Create a new img element
+            const plotDiv = document.createElement("div");
+            plotDiv.setAttribute("id", `plot-${index}`);
+            const insight = document.createElement("p");
+            insight.innerHTML = plotImage.insight;
+            insight.classList.add("insight-text");
+            // Add the plot html
+            // Append the image to the container
+            container.appendChild(plotDiv);
+            container.appendChild(insight);
+            Plotly.react(`plot-${index}`, JSON.parse(plotImage.plotDiv), {});
+          });
+          processBtn.hide();
+        },
+        error: function (xhr) {
+          let errorMessage = "An error occurred while processing the file.";
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+            errorMessage = xhr.responseJSON.message;
+          }
+          uploadStatus
+            .removeClass()
+            .addClass("alert alert-danger")
+            .text(errorMessage)
+            .show();
+        },
+      });
     });
-});
-
+  });
 </script>
 {% endblock javascripts %}

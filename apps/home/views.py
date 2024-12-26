@@ -9,11 +9,28 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.template import loader
 from django.urls import reverse
-from django.shortcuts import render
+from django.shortcuts import render,get_object_or_404
 import pandas as pd
 from .models import UploadedFile
 from .module.process_data import ProcessData
-
+from .module.visualize_data import VisualizeData
+from .module.get_insight import get_insight
+import boto3
+import os
+from dotenv import load_dotenv
+from plotly.offline import plot
+import json
+import plotly.express as px
+load_dotenv()
+minio_url = os.getenv('MINIOURL')
+minio_access_key = os.getenv('MINIO_ACESS_KEY')
+minio_secret_key = os.getenv('MINIO_SECRET_KEY')
+s3 = boto3.client(
+    's3',
+    endpoint_url=minio_url,
+    aws_access_key_id=minio_access_key,
+    aws_secret_access_key=minio_secret_key
+)
 
 @login_required(login_url="/login/")
 def index(request):
@@ -52,6 +69,7 @@ def pages(request):
 @login_required(login_url="/login/")
 def upload_file(request):
     if request.method == 'POST':
+        prompt=request.POST.get("prompt","")
         file = request.FILES.get('file')
         
         if not file:
@@ -72,17 +90,19 @@ def upload_file(request):
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Unsupported file format. Please upload a .csv or .xlsx file.'
-                }, status=400)
-
-            # Lưu file vào database
-            uploaded_file = UploadedFile.objects.create(file=file)
-
+                }, status=400)            
+            # Lưu file vào minIO
             # Đọc file với pandas, thêm `header=None` nếu không có tiêu đề cột
             if file.name.endswith('.csv'):
                 file.seek(0)  
                 df = pd.read_csv(file, header=0)  # Thay đổi header=0 hoặc header=None tùy theo dữ liệu của bạn
             else:
-                df = pd.read_excel(file)
+                df = pd.read_excel(file)            
+            minio_key = f"uploads/{file.name}"
+            s3.upload_fileobj(file, "datainsight", minio_key)
+            uploaded_file = UploadedFile.objects.create(
+                file=minio_key,  # Store the MinIO file key in the database
+            )
 
             # Nếu file trống, trả về lỗi
             if df.empty:
@@ -98,13 +118,26 @@ def upload_file(request):
                 'file_name': file.name
             }
             uploaded_file.metadata = metadata
+            #Process data
+            processor = ProcessData(df)
+            df_processed = processor.process_data_df(metadata)
+            data_summary = processor.get_summary_data()
+            #visualize processed data
+            visualizer = VisualizeData(df_processed)
+            visualize_result=visualizer.visualize_data_df(metadata,prompt)
+            plot_path = [{"plotDiv":item["plot"].to_json(),"description":item["description"]} for item in visualize_result]
+            for i in range(len(visualize_result)):
+                plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])
+            uploaded_file.processed = True
+            uploaded_file.validated = True
+            uploaded_file.plotImages+=plot_path
             uploaded_file.save()
-
-            # Gọi hàm process_data để xử lý dữ liệu
-            response = process_data(request, uploaded_file.id)
-            
-            return response
-
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Data processed and visualized successfully.',
+                'data_summary': data_summary,
+                'plot_path': plot_path
+            })
         except Exception as e:
             return JsonResponse({
                 'status': 'error',
@@ -160,15 +193,9 @@ def visualize_data(request, file_id):
                 'status': 'error',
                 'message': 'Data not validated for visualization.'
             })
-
-        # Giả lập visualize dữ liệu, sử dụng Pandas hoặc Matplotlib để tạo hình ảnh hoặc biểu đồ
-        df = pd.read_csv(uploaded_file.file.path)  # Hoặc load từ file đã xử lý
-        plot_path = f'temporary/plot_{uploaded_file.file.name}.png'
-        
-        # Ví dụ tạo biểu đồ đơn giản
-        df['some_column'].plot(kind='bar')  # Giả định có cột 'some_column'
-        plt.savefig(plot_path)
-
+        file_path=upload_file.file.path
+        visualizer=VisualizeData.load_data(file_path)
+        plot_path=visualizer.visualize_data_df(uploaded_file.metadata,"")
         return JsonResponse({
             'status': 'success',
             'plot_path': plot_path
@@ -177,5 +204,57 @@ def visualize_data(request, file_id):
     except Exception as e:
         return JsonResponse({
             'status': 'error',
+            'message': str(e)
+        }, status=500)
+@login_required(login_url="/login/")
+def get_uploads(request):
+    try:
+        uploaded_files=UploadedFile.objects.all().values('file', 'processed', 'validated', 'created_at', 'updated_at','id','plotImages')
+        files_list = list(uploaded_files)
+        return JsonResponse({
+            'status':"success",
+            'files':files_list
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+@login_required(login_url="/login/")
+def get_details(request, file_id):
+    try:
+        # Fetch the uploaded file details
+        uploaded_file = get_object_or_404(UploadedFile, id=file_id)
+        file_data = {
+            "id":uploaded_file.id,
+            "file": uploaded_file.file,
+            "processed": uploaded_file.processed,
+            "validated": uploaded_file.validated,
+            "created_at": uploaded_file.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": uploaded_file.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "plotImages": uploaded_file.plotImages,
+        }
+        # Pass the file details to the template
+        return render(request, 'home/file_detail.html', {
+            'fileData': file_data
+        })
+
+    except Exception as e:
+        # Handle exceptions and show an error page or message
+        return render(request, 'error.html', {
+            'message': str(e)
+        }, status=500)
+def get_plots_details(request, file_id):
+    try:
+        # Fetch the uploaded file details
+        uploaded_file = get_object_or_404(UploadedFile, id=file_id)
+        # Pass the file details to the template
+        return JsonResponse({
+            'status': 'success',
+            'plot_path': uploaded_file.plotImages
+        })
+    except Exception as e:
+        # Handle exceptions and show an error page or message
+        return render(request, 'error.html', {
             'message': str(e)
         }, status=500)
