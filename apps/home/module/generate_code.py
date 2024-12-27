@@ -55,7 +55,6 @@ def process(df):
 """
 #Generate code for visualizing data
 def generate_code_visualize_data(metadata,needs):
-    print("Given prompt:",needs)
     prompt=f"""
     Given the following metadata, generate Python code to visualize a pandas DataFrame with appropriate graph and must follow the user's needs (if exist) using plotly.
     Metadata: {metadata}

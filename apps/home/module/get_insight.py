@@ -29,7 +29,7 @@ def analyze_image(plotjson, desc):
             Analyze the following data visualization and provide insights:
             Description: {desc}
             Plot Data (JSON): {json.dumps(plotjson, indent=2)}
-            Provide insights on trends, relationships, and any unusual observations that might benefit a business.
+            Provide insights on trends, relationships, and any unusual observations that might benefit a business. Go straight to the point and do not include any intro
             """
         }
     ]

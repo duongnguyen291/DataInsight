@@ -19,6 +19,8 @@ urlpatterns = [
     path('getUploads/',views.get_uploads,name="get_uploads"),
     path('getDetails/<int:file_id>/',views.get_details,name="get_detail"),
     path('getPlots/<int:file_id>/',views.get_plots_details,name="get_plot"),
+    path('reprompt/',views.reprompt,name="regenerate_plots"),
+    path('add_insight/',views.add_insight,name="add_insight"),
     # Matches any html file
     re_path(r'^.*\.*', views.pages, name='pages'),
 ]

@@ -66,14 +66,14 @@
     color: black;
     padding-top: 30px;
   }
-  .process-btn {
+  #process-btn {
     background-color: rgb(195, 83, 235);
     border: none;
     color: white;
     margin-top: 20px;
     padding: 10px 45px;
   }
-  .process-btn:hover {
+  #process-btn:hover {
     background-color: rgb(168, 71, 203);
   }
   @keyframes rollDown {
@@ -112,7 +112,7 @@
   .plot-div {
     margin-bottom: 20px;
   }
-  .regenerate-btn {
+  #regenerate-btn {
     background-color: yellow;
     color: black;
     border: none;
@@ -120,7 +120,7 @@
     font-size: 14px;
     display: inline-block;
   }
-  .regenerate-btn:hover {
+  #regenerate-btn:hover {
     background-color: rgb(209, 209, 0);
   }
 </style>
@@ -134,13 +134,12 @@
             <div class="text-center" style="width: 100%">
               <form id="upload-form" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="file-name" id="file-name"></div>
                 <div class="input-field">
                   <h2>Choose a prompt for the insight you want to generate</h2>
                   <textarea id="prompt" name="prompt"></textarea>
                 </div>
-                <button class="process-btn">Add insight</button>
-                <button class="regenerate-btn">Re-generate insights</button>
+                <button id="process-btn">Add insight</button>
+                <button id="regenerate-btn">Re-generate insights</button>
               </form>
               <div id="upload-status" class="alert" role="alert"></div>
               <div id="data-summary"></div>
@@ -176,12 +175,167 @@
 
 <script>
   const id = "{{fileData.id}}";
+  const uploadStatus = $("#upload-status");
+  let plotImages = [];
   async function loadPlots() {
     try {
       const response = await fetch(`/getPlots/${id}/`);
       const data = await response.json();
-      console.log(data);
       if (data.status === "success") {
+        plotImages = data.plot_path;
+        const container = document.getElementById("graphs-container");
+        container.innerHTML = "";
+        plotImages.forEach((plotImage, index) => {
+          // Create a new img element
+          const plotDiv = document.createElement("div");
+          plotDiv.setAttribute("id", `plot-${index}`);
+          const description = document.createElement("h4");
+          const insight = document.createElement("p");
+          description.innerHTML = plotImage.description;
+          insight.innerHTML = plotImage.insight;
+          insight.classList.add("insight-text");
+          insight.style.display = "none";
+          //Button to reveal insight
+          const toggleButton = document.createElement("button");
+          toggleButton.classList.add("toggle-button");
+          toggleButton.innerHTML = "Show Insight ▼";
+          toggleButton.addEventListener("click", () => {
+            if (insight.style.display === "none") {
+              insight.style.display = "block";
+              insight.style.animation = "rollDown 0.3s ease-out";
+              toggleButton.innerHTML = "Hide Insight ▲";
+            } else {
+              insight.style.animation = "rollUp 0.3s ease-out";
+              setTimeout(() => {
+                insight.style.display = "none";
+              }, 300); // Match animation duration
+              toggleButton.innerHTML = "Show Insight ▼";
+            }
+          });
+          // Add the plot html
+          // Append the image to the container
+          container.appendChild(description);
+          container.appendChild(plotDiv);
+          container.appendChild(toggleButton);
+          container.appendChild(insight);
+          Plotly.react(`plot-${index}`, JSON.parse(plotImage.plotDiv), {});
+        });
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  const regenBtn = document.getElementById("regenerate-btn");
+  const addBtn = document.getElementById("process-btn");
+  regenBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    uploadStatus
+      .removeClass()
+      .addClass("alert alert-info")
+      .text("Processing...")
+      .show();
+    reprompt();
+  });
+  addBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    uploadStatus
+      .removeClass()
+      .addClass("alert alert-info")
+      .text("Processing...")
+      .show();
+    addInsight();
+  });
+  async function reprompt() {
+    const promptInput = document.getElementById("prompt");
+    const uploadData = {
+      id: id,
+      prompt: promptInput.value,
+    };
+    try {
+      const response = await fetch("/reprompt/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": $("input[name=csrfmiddlewaretoken]").val(),
+        },
+        body: JSON.stringify(uploadData),
+      });
+      const data = await response.json();
+      if (data.status === "success") {
+        uploadStatus
+          .removeClass()
+          .addClass("alert alert-success")
+          .text("Regenerate insight successfully!")
+          .show();
+        const plotImages = data.plot_path;
+        const container = document.getElementById("graphs-container");
+        container.innerHTML = "";
+        plotImages.forEach((plotImage, index) => {
+          // Create a new img element
+          const plotDiv = document.createElement("div");
+          plotDiv.setAttribute("id", `plot-${index}`);
+          const description = document.createElement("h4");
+          const insight = document.createElement("p");
+          description.innerHTML = plotImage.description;
+          insight.innerHTML = plotImage.insight;
+          insight.classList.add("insight-text");
+          insight.style.display = "none";
+          //Button to reveal insight
+          const toggleButton = document.createElement("button");
+          toggleButton.classList.add("toggle-button");
+          toggleButton.innerHTML = "Show Insight ▼";
+          toggleButton.addEventListener("click", () => {
+            if (insight.style.display === "none") {
+              insight.style.display = "block";
+              insight.style.animation = "rollDown 0.3s ease-out";
+              toggleButton.innerHTML = "Hide Insight ▲";
+            } else {
+              insight.style.animation = "rollUp 0.3s ease-out";
+              setTimeout(() => {
+                insight.style.display = "none";
+              }, 300); // Match animation duration
+              toggleButton.innerHTML = "Show Insight ▼";
+            }
+          });
+          // Add the plot html
+          // Append the image to the container
+          container.appendChild(description);
+          container.appendChild(plotDiv);
+          container.appendChild(toggleButton);
+          container.appendChild(insight);
+          Plotly.react(`plot-${index}`, JSON.parse(plotImage.plotDiv), {});
+        });
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  async function addInsight() {
+    const promptInput = document.getElementById("prompt");
+    const descriptions = plotImages
+      .map((image) => image.description)
+      .join(", ");
+    console.log(descriptions);
+    const uploadData = {
+      id: id,
+      prompt: `${promptInput.value}. Don't create plots that may repeat these descriptions: ${descriptions}`,
+    };
+    try {
+      const response = await fetch("/add_insight/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": $("input[name=csrfmiddlewaretoken]").val(),
+        },
+        body: JSON.stringify(uploadData),
+      });
+      const data = await response.json();
+      if (data.status === "success") {
+        uploadStatus
+          .removeClass()
+          .addClass("alert alert-success")
+          .text("Add insights successfully!")
+          .show();
         const plotImages = data.plot_path;
         const container = document.getElementById("graphs-container");
         container.innerHTML = "";
