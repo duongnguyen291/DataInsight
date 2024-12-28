@@ -322,7 +322,8 @@ def reprompt(request):
         visualize_result=visualizer.visualize_data_df(combined_metadata,prompt)
         plot_path = [{"plotDiv":item["plot"].to_json(),"description":item["description"]} for item in visualize_result]
         for i in range(len(visualize_result)):
-            plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])
+            plot_path[i]["context"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])[0]
+            plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])[1]
         uploaded_file.processed = True
         uploaded_file.validated = True
         uploaded_file.plotImages=plot_path
@@ -375,7 +376,8 @@ def add_insight(request):
         visualize_result=visualizer.visualize_data_df(combined_metadata,prompt)
         plot_path = [{"plotDiv":item["plot"].to_json(),"description":item["description"]} for item in visualize_result]
         for i in range(len(visualize_result)):
-            plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])
+            plot_path[i]["context"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])[0]
+            plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])[1]
         uploaded_file.processed = True
         uploaded_file.validated = True
         uploaded_file.plotImages+=plot_path

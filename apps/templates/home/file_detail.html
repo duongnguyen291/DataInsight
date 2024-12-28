@@ -276,6 +276,11 @@
       plotDiv.setAttribute("id", `plot-${index}`);
       const description = document.createElement("h4");
       const insight = document.createElement("p");
+      const contextHeader=document.createElement("h3");
+      const contextContent=document.createElement("p");
+      contextHeader.innerHTML="Context to generate insight"
+      contextContent.innerHTML=plotImage.context;
+      contextContent.style.whiteSpace="pre-wrap";
       description.innerHTML = plotImage.description;
       insight.innerHTML = plotImage.insight;
       insight.classList.add("insight-text");
@@ -318,6 +323,8 @@
         // Append content to the modal
         plotModalContainer.appendChild(modalDescription);
         plotModalContainer.appendChild(modalPlotDiv);
+        plotModalContainer.appendChild(contextHeader);
+        plotModalContainer.appendChild(contextContent);
         plotModalContainer.appendChild(modalInsight);
 
         // Render the plot in the modal

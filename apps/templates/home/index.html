@@ -169,11 +169,17 @@
             const plotDiv = document.createElement("div");
             plotDiv.setAttribute("id", `plot-${index}`);
             const insight = document.createElement("p");
+            const contextHeader=document.createElement("h3");
+            const contextContent=document.createElement("p");
+            contextHeader.innerHTML="Context to generate insight"
+            contextContent.innerHTML=plotImage.context;
             insight.innerHTML = plotImage.insight;
             insight.classList.add("insight-text");
             // Add the plot html
             // Append the image to the container
             container.appendChild(plotDiv);
+            container.appendChild(contextHeader);
+            container.appendChild(contextContent);
             container.appendChild(insight);
             Plotly.react(`plot-${index}`, JSON.parse(plotImage.plotDiv), {});
           });

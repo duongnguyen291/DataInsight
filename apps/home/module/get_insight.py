@@ -134,10 +134,10 @@ def get_chart_desc(plotjson, title):
 def parse_context(context):
     final = ''
     for i, res in enumerate(context):
-        c = f'{i+1}. {res[0]}'
+        c = f'- {res[0]}'
         final += c
         final += '\n'
-        final += '  '
+        final += '            '
     return final
 
 def get_insight(plotjson,title):
@@ -149,8 +149,6 @@ def get_insight(plotjson,title):
             context=parse_context(context)
             all_cont.append(context)
         context_print = f"""
-        *Context*: 
-
         1. Foundational Information on Import-Export:
             {all_cont[0]}
 
