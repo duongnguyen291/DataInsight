@@ -15,16 +15,16 @@ print(os.environ.get("API_KEY"))
 NGROK_URL=os.environ.get("NGROK_URL")
 print(NGROK_URL)
 
-def generate_code_process_data(metadata):
+def generate_code_process_data(metadatas):
     """
     Gọi OpenAI API để sinh mã code xử lý dữ liệu dựa trên metadata.
     """
     # Tạo prompt mô tả yêu cầu xử lý dữ liệu dựa trên metadata
     prompt = f"""
-    Given the following metadata, generate Python code to process a pandas DataFrame.
-    Metadata: {metadata}
+    Given the following metadatas, generate Python code to take in multiple dataframes that might have correlation to each other and combine them into one. If there's only one metadata then just clean up that dataframe
+    Metadatas: {metadatas}
     ONLY PROVIDE THE PYTHON CODE, START WITH def process(df):.ABSOLUTELY DO NOT include python at the start and DO NOT import anything.
-    The generated code must only include a function named `process(df)` that takes a DataFrame as input and returns the processed DataFrame. Ensure that the code is formatted correctly and performs appropriate data cleaning, transformations, or aggregations based on the metadata provided.
+    The generated code must only include a function named `process(df)` that takes an array of DataFrames as input and returns the processed DataFrame. Ensure that the code is formatted correctly and performs appropriate data cleaning, transformations, or aggregations based on the metadatas provided.
     """
 
     try:

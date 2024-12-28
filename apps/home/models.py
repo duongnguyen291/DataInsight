@@ -8,13 +8,14 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class UploadedFile(models.Model):
-    file = models.CharField(max_length=255)
-    metadata = models.JSONField(null=True, blank=True)  # Lưu metadata của file
+    file = models.JSONField(default=list)
+    uploadName=models.CharField(max_length=255,default="")
+    metadata = models.CharField(max_length=999,default="")  # Lưu metadata của file
     processed = models.BooleanField(default=False)
     validated = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     plotImages=models.JSONField(default=list, blank=True)
     def __str__(self):
-        return self.file
+        return self.uploadName
 

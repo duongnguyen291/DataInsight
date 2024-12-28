@@ -68,13 +68,12 @@ def pages(request):
 
 
 @login_required(login_url="/login/")
-def upload_files(request):
+def upload_file(request):
     if request.method == 'POST':
         prompt=request.POST.get("prompt","")
-        uploadName=request.POST.get("name","")
-        print(uploadName)
-        files = request.FILES.getlist("files[]")
-        if len(files)==0:
+        file = request.FILES.get('file')
+        
+        if not file:
             return JsonResponse({
                 'status': 'error',
                 'message': 'No file uploaded'
@@ -82,56 +81,48 @@ def upload_files(request):
 
         try:
             # Kiểm tra định dạng và kích thước file
-            combined_data = []
-            uploaded_file = UploadedFile.objects.create(
-                file=[],  # Store the MinIO file key in the database
-                uploadName=uploadName,
-            )
-            for file in files:
-                if file.size > 10 * 1024 * 1024:  # Giới hạn 10MB 
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'File size too large.'
-                    }, status=400)
+            if file.size > 10 * 1024 * 1024:  # Giới hạn 10MB chẳng hạn
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'File size too large.'
+                }, status=400)
 
-                if not file.name.endswith(('.csv', '.xlsx', '.xls')):
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'Unsupported file format. Please upload a .csv or .xlsx file.'
-                    }, status=400)            
+            if not file.name.endswith(('.csv', '.xlsx', '.xls')):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Unsupported file format. Please upload a .csv or .xlsx file.'
+                }, status=400)            
             # Lưu file vào minIO
-            # Đọc file với pandas, thêm `header=None` nếu không có tiêu đề cột                    
+            # Đọc file với pandas, thêm `header=None` nếu không có tiêu đề cột
+            if file.name.endswith('.csv'):
                 file.seek(0)  
-                if file.name.endswith('.csv'):
-                    df = pd.read_csv(file, header=0)  # Thay đổi header=0 hoặc header=None tùy theo dữ liệu của bạn
-                else:
-                    df = pd.read_excel(file)            
-                # Nếu file trống, trả về lỗi
-                if df.empty:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'Uploaded file is empty.'
-                    }, status=400)
-                minio_key = f"uploads/{file.name}"
-                file.seek(0)
-                s3.upload_fileobj(file, "datainsight", minio_key)
-                uploaded_file.file.append(minio_key)
-                metadata = {
+                df = pd.read_csv(file, header=0)  # Thay đổi header=0 hoặc header=None tùy theo dữ liệu của bạn
+            else:
+                df = pd.read_excel(file)            
+            minio_key = f"uploads/{file.name}"
+            file.seek(0)
+            s3.upload_fileobj(file, "datainsight", minio_key)
+            uploaded_file = UploadedFile.objects.create(
+                file=minio_key,  # Store the MinIO file key in the database
+            )
+
+            # Nếu file trống, trả về lỗi
+            if df.empty:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Uploaded file is empty.'
+                }, status=400)
+
+            # Lưu metadata
+            metadata = {
                 'columns': list(df.columns),
                 'num_rows': len(df),
                 'file_name': file.name
-                }
-                combined_data.append({
-                    'df':df,
-                    'metadata':metadata,
-                })
+            }
+            uploaded_file.metadata = metadata
             #Process data
-            combined_metadata = "\n".join(
-            json.dumps(item['metadata']) for item in combined_data
-            )
-            uploaded_file.metadata=combined_metadata
-            processor = ProcessData(combined_data)
-            df_processed = processor.process_data_df()
+            processor = ProcessData(df)
+            df_processed = processor.process_data_df(metadata)
             data_summary = processor.get_summary_data()
             #visualize processed data
             visualizer = VisualizeData(df_processed)
@@ -204,7 +195,7 @@ def visualize_data(request, file_id):
                 'status': 'error',
                 'message': 'Data not validated for visualization.'
             })
-        file_path=uploaded_file.file.path
+        file_path=upload_file.file.path
         visualizer=VisualizeData.load_data(file_path)
         plot_path=visualizer.visualize_data_df(uploaded_file.metadata,"")
         return JsonResponse({
@@ -220,7 +211,7 @@ def visualize_data(request, file_id):
 @login_required(login_url="/login/")
 def get_uploads(request):
     try:
-        uploaded_files=UploadedFile.objects.all().values('file','uploadName', 'processed', 'validated', 'created_at', 'updated_at','id','plotImages')
+        uploaded_files=UploadedFile.objects.all().values('file', 'processed', 'validated', 'created_at', 'updated_at','id','plotImages')
         files_list = list(uploaded_files)
         return JsonResponse({
             'status':"success",
@@ -239,7 +230,6 @@ def get_details(request, file_id):
         file_data = {
             "id":uploaded_file.id,
             "file": uploaded_file.file,
-            "uploadName":uploaded_file.uploadName,
             "processed": uploaded_file.processed,
             "validated": uploaded_file.validated,
             "created_at": uploaded_file.created_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -289,36 +279,22 @@ def reprompt(request):
         body = json.loads(request.body)
         prompt = body.get("prompt")
         file_id = body.get("id")
-        combined_data = []
         uploaded_file = get_object_or_404(UploadedFile, id=file_id)
-        file_keys=uploaded_file.file
-        for file_key in file_keys:
-            file_content=get_file_from_minio(file_key)
-            if(file_key.endswith('.csv')):
-                file=io.StringIO(file_content.decode('utf-8'))
-            elif file_key.endswith(('.xlsx','.xls')):
-                file=io.BytesIO(file_content)
-            if file_key.endswith('.csv'):
-                df = pd.read_csv(file, header=0)  
-            else:
-                df = pd.read_excel(file)
-                metadata = {
-                'columns': list(df.columns),
-                'num_rows': len(df),
-                }
-                combined_data.append({
-                    'df':df,
-                    'metadata':metadata,
-                })
-        combined_metadata = "\n".join(
-        json.dumps(item['metadata']) for item in combined_data
-        )
-        uploaded_file.metadata=combined_metadata
+        file_key=uploaded_file.file
+        file_content=get_file_from_minio(file_key)
+        if(file_key.endswith('.csv')):
+            file=io.StringIO(file_content.decode('utf-8'))
+        elif file_key.endswith(('.xlsx','.xls')):
+            file=io.BytesIO(file_content)
+        if file_key.endswith('.csv'):
+            df = pd.read_csv(file, header=0)  
+        else:
+            df = pd.read_excel(file)
+        processor = ProcessData(df)
+        df_processed = processor.process_data_df(uploaded_file.metadata)
         #visualize processed data
-        processor = ProcessData(combined_data)
-        df_processed = processor.process_data_df()
         visualizer = VisualizeData(df_processed)
-        visualize_result=visualizer.visualize_data_df(combined_metadata,prompt)
+        visualize_result=visualizer.visualize_data_df(uploaded_file.metadata,prompt)
         plot_path = [{"plotDiv":item["plot"].to_json(),"description":item["description"]} for item in visualize_result]
         for i in range(len(visualize_result)):
             plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])
@@ -343,35 +319,21 @@ def add_insight(request):
         prompt = body.get("prompt")
         file_id = body.get("id")
         uploaded_file = get_object_or_404(UploadedFile, id=file_id)
-        combined_data = []
-        file_keys=uploaded_file.file
-        for file_key in file_keys:
-            file_content=get_file_from_minio(file_key)
-            if(file_key.endswith('.csv')):
-                file=io.StringIO(file_content.decode('utf-8'))
-            elif file_key.endswith(('.xlsx','.xls')):
-                file=io.BytesIO(file_content)
-            if file_key.endswith('.csv'):
-                df = pd.read_csv(file, header=0)  
-            else:
-                df = pd.read_excel(file)
-            metadata = {
-                'columns': list(df.columns),
-                'num_rows': len(df),
-                }
-            combined_data.append({
-                'df':df,
-                'metadata':metadata,
-            })
-        combined_metadata = "\n".join(
-        json.dumps(item['metadata']) for item in combined_data
-        )
-        uploaded_file.metadata=combined_metadata
-        processor = ProcessData(combined_data)
-        df_processed = processor.process_data_df()
+        file_key=uploaded_file.file
+        file_content=get_file_from_minio(file_key)
+        if(file_key.endswith('.csv')):
+            file=io.StringIO(file_content.decode('utf-8'))
+        elif file_key.endswith(('.xlsx','.xls')):
+            file=io.BytesIO(file_content)
+        if file_key.endswith('.csv'):
+            df = pd.read_csv(file, header=0)  
+        else:
+            df = pd.read_excel(file)
+        processor = ProcessData(df)
+        df_processed = processor.process_data_df(uploaded_file.metadata)
         #visualize processed data
         visualizer = VisualizeData(df_processed)
-        visualize_result=visualizer.visualize_data_df(combined_metadata,prompt)
+        visualize_result=visualizer.visualize_data_df(uploaded_file.metadata,prompt)
         plot_path = [{"plotDiv":item["plot"].to_json(),"description":item["description"]} for item in visualize_result]
         for i in range(len(visualize_result)):
             plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])

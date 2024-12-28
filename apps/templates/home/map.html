@@ -89,10 +89,10 @@
 
         data.files.forEach((file) => {
           const row = document.createElement("tr");
-
+          console.log(file);
           // Create and populate cells
           const nameCell = document.createElement("td");
-          nameCell.textContent = file.file.split("/").pop(); // Get file name from path
+          nameCell.textContent = file.uploadName; // Get file name from path
 
           const processedCell = document.createElement("td");
           processedCell.textContent = file.processed ? "Yes" : "No";
