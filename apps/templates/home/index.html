@@ -62,10 +62,15 @@
                     id="file-upload"
                     style="display: none"
                     accept=".csv,.xlsx,.xls"
+                    multiple
                   />
                   Choose File
                 </label>
                 <div class="file-name" id="file-name"></div>
+                <div class="input-field">
+                  <p>Choose a name for the upload</p>
+                  <input id="name" name="name" />
+                </div>
                 <div class="input-field">
                   <p>Choose a prompt for the insight you want to see</p>
                   <textarea id="prompt" name="prompt"></textarea>
@@ -98,9 +103,12 @@
     const uploadStatus = $("#upload-status");
     const dataSummary = $("#data-summary");
     fileUpload.on("change", function () {
-      const file = this.files[0];
-      if (file) {
-        fileName.text("Selected file: " + file.name).show();
+      const files = this.files;
+      if (files.length > 0) {
+        const fileNames = Array.from(files)
+          .map((file) => file.name)
+          .join(", ");
+        fileName.text("Selected files: " + fileNames).show();
         processBtn.show();
       } else {
         fileName.hide();
@@ -112,8 +120,8 @@
       e.preventDefault();
 
       const formData = new FormData();
-      const file = fileUpload[0].files[0];
-      if (!file) {
+      const files = fileUpload[0].files;
+      if (files.length === 0) {
         uploadStatus
           .removeClass()
           .addClass("alert alert-danger")
@@ -122,8 +130,13 @@
         return;
       }
 
-      formData.append("file", file);
-
+      Array.from(files).forEach((file, index) => {
+        formData.append("files[]", file);
+      });
+      const uploadName = $("#name").val(); // Get the value of the name field
+      const prompt = $("#prompt").val();
+      formData.append("prompt", prompt);
+      formData.append("name", uploadName); // Append it to the FormData object
       // Cập nhật trạng thái upload và xử lý dữ liệu
       uploadStatus
         .removeClass()

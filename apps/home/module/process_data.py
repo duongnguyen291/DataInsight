@@ -3,9 +3,10 @@ from .generate_code import generate_code_process_data
 import os
 import time
 import matplotlib.pyplot as plt
+import json
 class ProcessData:
-    def __init__(self, df):
-        self.df = df
+    def __init__(self, dfs):
+        self.dfs = dfs
 
     @classmethod
     def load_data(cls, file_path):
@@ -18,12 +19,15 @@ class ProcessData:
             df = pd.read_excel(file_path)
         return cls(df)
 
-    def process_data_df(self, metadata):
+    def process_data_df(self):
         """
         Thực hiện các bước xử lý dữ liệu trên DataFrame và trả về DataFrame đã xử lý.
         """
+        combined_metadata = "\n".join(
+            json.dumps(item['metadata']) for item in self.dfs
+        )
         # Gọi hàm generate_code_process_data để sinh mã code dựa trên metadata
-        code = generate_code_process_data(metadata)
+        code = generate_code_process_data(combined_metadata)
         print("Using:")
         print(code)
         # Thực thi mã code được sinh ra
@@ -33,8 +37,8 @@ class ProcessData:
 
         # Gọi hàm process trên DataFrame
         if 'process' in local_context:
-            self.df = local_context['process'](self.df)
-
+            dataframes=[item['df'] for item in self.dfs]
+            self.df = local_context['process'](dataframes)
         return self.df
     def get_summary_data(self):
         """
