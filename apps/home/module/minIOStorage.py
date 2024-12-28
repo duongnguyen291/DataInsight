@@ -2,8 +2,8 @@ import boto3
 s3 = boto3.client(
     's3',
     endpoint_url='http://127.0.0.1:9000',
-    aws_access_key_id='FJsC5z23tsflkDSeczO2',
-    aws_secret_access_key='toqvV4CoYh4OcPsCbz4gbeDYLuXkVq0Tamfxrc1U'
+    aws_access_key_id='YruQp7n8MAjxMyS02cud',
+    aws_secret_access_key='yLpZvIj7TTOTHJbQWK606IXhYWjxSw5XnnNEq7c'
 )
 
 def upload_to_minio(file, bucket_name, key):

@@ -1,0 +1,33 @@
+1. bật docker
+2. bật minio
+    1. Download the MinIO Executable
+    Visit the MinIO download page for Windows: https://dl.min.io/server/minio/release/windows-amd64/minio.exe
+    Download the minio.exe file.
+    2. Place MinIO Executable
+    Save the minio.exe file to a directory of your choice. For example, C:\MinIO.
+    3. Set Up a Data Directory
+    Create a directory for MinIO to store its data, e.g., D:\MinIOData.
+    4. Start the MinIO Server
+    Open a terminal (Command Prompt or PowerShell).
+    Navigate to the directory where you saved minio.exe:
+    cmd
+    Copy code
+    cd C:\MinIO
+    Run the MinIO server with the following command:
+    cmd
+    Copy code
+    minio.exe server D:\MinIOData
+    Replace D:\MinIOData with the path to your desired data directory.
+    5. Access the MinIO Console
+    Once the server starts, you'll see logs indicating that MinIO is running. It will include URLs for the MinIO Console.
+    Open your browser and go to the MinIO Console URL, typically:
+    arduino
+    Copy code
+    http://127.0.0.1:9000
+    Log in using the default credentials:
+    Username: minioadmin
+    Password: minioadmin
+3. bật server
+    python manage.py makemigrations
+    python manage.py migrate
+    python manage.py runserver

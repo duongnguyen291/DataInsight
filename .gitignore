@@ -31,3 +31,4 @@ apps/static/assets/.temp
 
 uploads/*
 .env
+data
