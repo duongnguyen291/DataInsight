@@ -87,6 +87,7 @@ def get_chart_desc(plotjson, title):
         {
             "role": "user",
             "content": prompt
+
         }
     ]
     

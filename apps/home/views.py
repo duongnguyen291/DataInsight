@@ -20,6 +20,7 @@ import os
 from dotenv import load_dotenv
 from plotly.offline import plot
 import json
+import io
 import plotly.express as px
 load_dotenv()
 minio_url = os.getenv('MINIOURL')
@@ -99,6 +100,7 @@ def upload_file(request):
             else:
                 df = pd.read_excel(file)            
             minio_key = f"uploads/{file.name}"
+            file.seek(0)
             s3.upload_fileobj(file, "datainsight", minio_key)
             uploaded_file = UploadedFile.objects.create(
                 file=minio_key,  # Store the MinIO file key in the database
@@ -256,6 +258,97 @@ def get_plots_details(request, file_id):
         })
     except Exception as e:
         # Handle exceptions and show an error page or message
+        return render(request, 'error.html', {
+            'message': str(e)
+        }, status=500)
+def get_file_from_minio(file_key):
+    """
+    Retrieve a file from the MinIO bucket.
+
+    :param file_key: The key (name) of the file in the bucket.
+    :return: File content as bytes.
+    """
+    try:
+        response = s3.get_object(Bucket='datainsight', Key=file_key)
+        return response['Body'].read()
+    except Exception as e:
+        raise Exception(f"Error retrieving file: {str(e)}")
+
+def reprompt(request):
+    try:
+        body = json.loads(request.body)
+        prompt = body.get("prompt")
+        file_id = body.get("id")
+        uploaded_file = get_object_or_404(UploadedFile, id=file_id)
+        file_key=uploaded_file.file
+        file_content=get_file_from_minio(file_key)
+        if(file_key.endswith('.csv')):
+            file=io.StringIO(file_content.decode('utf-8'))
+        elif file_key.endswith(('.xlsx','.xls')):
+            file=io.BytesIO(file_content)
+        if file_key.endswith('.csv'):
+            df = pd.read_csv(file, header=0)  
+        else:
+            df = pd.read_excel(file)
+        processor = ProcessData(df)
+        df_processed = processor.process_data_df(uploaded_file.metadata)
+        #visualize processed data
+        visualizer = VisualizeData(df_processed)
+        visualize_result=visualizer.visualize_data_df(uploaded_file.metadata,prompt)
+        plot_path = [{"plotDiv":item["plot"].to_json(),"description":item["description"]} for item in visualize_result]
+        for i in range(len(visualize_result)):
+            plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])
+        uploaded_file.processed = True
+        uploaded_file.validated = True
+        uploaded_file.plotImages=plot_path
+        uploaded_file.save()
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Data processed and visualized successfully.',
+            'plot_path': plot_path
+        })
+
+
+    except Exception as e:
+        return render(request, 'error.html', {
+            'message': str(e)
+        }, status=500)
+def add_insight(request):
+    try:
+        body = json.loads(request.body)
+        prompt = body.get("prompt")
+        file_id = body.get("id")
+        uploaded_file = get_object_or_404(UploadedFile, id=file_id)
+        file_key=uploaded_file.file
+        file_content=get_file_from_minio(file_key)
+        if(file_key.endswith('.csv')):
+            file=io.StringIO(file_content.decode('utf-8'))
+        elif file_key.endswith(('.xlsx','.xls')):
+            file=io.BytesIO(file_content)
+        if file_key.endswith('.csv'):
+            df = pd.read_csv(file, header=0)  
+        else:
+            df = pd.read_excel(file)
+        processor = ProcessData(df)
+        df_processed = processor.process_data_df(uploaded_file.metadata)
+        #visualize processed data
+        visualizer = VisualizeData(df_processed)
+        visualize_result=visualizer.visualize_data_df(uploaded_file.metadata,prompt)
+        plot_path = [{"plotDiv":item["plot"].to_json(),"description":item["description"]} for item in visualize_result]
+        for i in range(len(visualize_result)):
+            plot_path[i]["insight"]=get_insight(json.loads(visualize_result[i]["plot"].to_json()),visualize_result[i]["description"])
+        uploaded_file.processed = True
+        uploaded_file.validated = True
+        uploaded_file.plotImages+=plot_path
+        uploaded_file.save()
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Data processed and visualized successfully.',
+            'plot_path': uploaded_file.plotImages
+        })
+
+
+    except Exception as e:
         return render(request, 'error.html', {
             'message': str(e)
         }, status=500)
