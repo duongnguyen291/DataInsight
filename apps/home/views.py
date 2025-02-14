@@ -154,20 +154,24 @@ def process_data(request, file_id):
 def visualize_data(request, file_id):
     try:
         uploaded_file = UploadedFile.objects.get(id=file_id)
-        
+
         if not uploaded_file.validated:
             return JsonResponse({
                 'status': 'error',
                 'message': 'Data not validated for visualization.'
             })
 
-        # Giả lập visualize dữ liệu, sử dụng Pandas hoặc Matplotlib để tạo hình ảnh hoặc biểu đồ
-        df = pd.read_csv(uploaded_file.file.path)  # Hoặc load từ file đã xử lý
+        # Read CSV file
+        df = pd.read_csv(uploaded_file.file.path)
         plot_path = f'temporary/plot_{uploaded_file.file.name}.png'
-        
-        # Ví dụ tạo biểu đồ đơn giản
-        df['some_column'].plot(kind='bar')  # Giả định có cột 'some_column'
+
+        # Generate a simple bar chart
+        df['some_column'].plot(kind='bar')  # Assumes 'some_column' exists
         plt.savefig(plot_path)
+
+        # ✅ Save plot path to database
+        uploaded_file.plotImages = plot_path
+        uploaded_file.save()
 
         return JsonResponse({
             'status': 'success',
